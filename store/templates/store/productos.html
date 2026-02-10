@@ -1,0 +1,11 @@
+{% for producto in productos %}
+  <h3>{{ producto.nombre }}</h3>
+  <p>${{ producto.precio }}</p>
+
+  <form method="post" action="{% url 'checkout' %}">
+    {% csrf_token %}
+    <input type="hidden" name="producto_id" value="{{ producto.id }}">
+    <input type="number" name="cantidad" value="1" min="1">
+    <button type="submit">Comprar</button>
+  </form>
+{% endfor %}

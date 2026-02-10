@@ -1,55 +1,70 @@
 from django.views import View
-from django.http import JsonResponse
-from .services import CheckoutService
-from django.views import View
-from django.http import JsonResponse, HttpResponseBadRequest
 from django.shortcuts import render
-import json
-from .services import OrderService
-from .models import Producto, Inventario
+from django.shortcuts import redirect, get_object_or_404
+from django.http import HttpResponse
+from store.models import Producto, Orden, OrdenItem
+from store.services import CompraService, PagoService, OrderService
+from django.http import JsonResponse, HttpResponseBadRequest
+from store.infra.factory.procesador_pago_factory import ProcesadorPagoFactory
+
+class StoreIndexView(View):
+
+    def get(self, request):
+        productos = Producto.objects.all()
+        return render(request, "store/index.html", {"productos": productos})
 
 
 class CheckoutView(View):
-    """CBV that accepts a POST with JSON body to create an order.
+    def post(self, request):
+        producto_id = request.POST.get("producto_id")
+        cantidad = int(request.POST.get("cantidad", 1))
 
-    Expected JSON shape:
-    {
-      "items": [{"producto_id": 1, "cantidad": 2}, ...]
-    }
-    """
+        producto = get_object_or_404(Producto, id=producto_id)
+
+        procesador_pago = ProcesadorPagoFactory.crear()
+        service = CompraService(procesador_pago)
+
+        orden = service.ejecutar_proceso_compra(
+            usuario=request.user,
+            producto=producto,
+            cantidad=cantidad
+        )
+
+        return HttpResponse(f"✅ Compra realizada. Orden #{orden.id}")
+
+
+class ProcesarPagoView(View):
+
+    def post(self, request, orden_id):
+        try:
+            orden = PagoService().procesar_pago(orden_id)
+        except Exception as e:
+            return HttpResponseBadRequest(str(e))
+
+        return JsonResponse({"estado": orden.estado})
+
+
+class CheckoutHtmlView(View):
 
     def post(self, request):
-        try:
-            data = json.loads(request.body.decode() or "{}")
-        except Exception:
-            return HttpResponseBadRequest("Invalid JSON")
+        producto_id = request.POST.get("producto_id")
+        cantidad = int(request.POST.get("cantidad", 1))
 
-        items = data.get("items")
-        if items is None:
-            return HttpResponseBadRequest("Missing 'items' in request body")
+        items = [{
+            "producto_id": producto_id,
+            "cantidad": cantidad
+        }]
 
-        service = OrderService()
-        try:
-            orden = service.create_order(request.user, items)
-        except Exception as exc:
-            return HttpResponseBadRequest(str(exc))
+        orden = OrderService().crear_orden(request.user, items)
+        return redirect("pagar", orden_id=orden.id)
+    
+class PagarHtmlView(View):
 
-        return JsonResponse({
-            "orden_id": orden.id,
-            "total": float(orden.total),
-            "estado": orden.estado,
-        })
+    def get(self, request, orden_id):
+        orden = get_object_or_404(Orden, id=orden_id)
+        return render(request, "store/checkout.html", {"orden": orden})
 
+    def post(self, request, orden_id):
+        PagoService().procesar_pago(orden_id)
+        return render(request, "store/success.html")
 
-class StoreIndexView(View):
-    """Main store dashboard: shows products and inventory."""
-
-    def get(self, request):
-        productos = list(Producto.objects.all())
-        inventarios = {inv.producto_id: inv.stock for inv in Inventario.objects.select_related('producto').all()}
-        for p in productos:
-            p.stock = inventarios.get(p.id, 0)
-        context = {
-            'productos': productos,
-        }
-        return render(request, 'store/index.html', context)

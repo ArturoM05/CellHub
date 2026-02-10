@@ -1,0 +1,8 @@
+<h2>Confirmar pago</h2>
+
+<p>Total a pagar: ${{ orden.total }}</p>
+
+<form method="post">
+  {% csrf_token %}
+  <button type="submit">Pagar</button>
+</form>

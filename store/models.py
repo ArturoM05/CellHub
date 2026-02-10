@@ -2,60 +2,35 @@ from django.db import models
 from django.contrib.auth.models import User
 
 class Producto(models.Model):
-    marca = models.CharField(max_length=50)
-    modelo = models.CharField(max_length=50)
+    nombre = models.CharField(max_length=100)
     precio = models.DecimalField(max_digits=10, decimal_places=2)
-    descripcion = models.TextField()
-
-    ram = models.IntegerField()
-    almacenamiento = models.IntegerField()
-    procesador = models.CharField(max_length=100)
-    camara = models.CharField(max_length=100)
-    bateria = models.IntegerField()
-
-    activo = models.BooleanField(default=True)
-
-    def obtener_especificaciones(self):
-        return {
-            "ram": f"{self.ram} GB",
-            "almacenamiento": f"{self.almacenamiento} GB",
-            "procesador": self.procesador,
-            "camara": self.camara,
-            "bateria": f"{self.bateria} mAh",
-        }
-
-    def actualizar_precio(self, nuevo_precio):
-        if nuevo_precio <= 0:
-            raise ValueError("Precio inválido")
-        self.precio = nuevo_precio
-        self.save()
 
     def __str__(self):
-        return f"{self.marca} {self.modelo}"
+        return self.nombre
 
-class Inventario(models.Model):
-    producto = models.OneToOneField(Producto, on_delete=models.CASCADE)
-    stock = models.IntegerField()
-
-    def verificar_stock(self, cantidad):
-        if cantidad > self.stock:
-            raise ValueError(
-                f"Stock insuficiente para {self.producto}"
-            )
-
-    def descontar_stock(self, cantidad):
-        self.verificar_stock(cantidad)
-        self.stock -= cantidad
-        self.save()
 
 class Orden(models.Model):
-    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
-    total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    estado = models.CharField(max_length=30, default="CREADA")
-    fecha = models.DateTimeField(auto_now_add=True)
+    ESTADOS = (
+        ("CREADA", "Creada"),
+        ("PAGADA", "Pagada"),
+    )
 
-    def calcular_total(self, items):
-        self.total = sum(
-            item["producto"].precio * item["cantidad"]
-            for item in items
-        )
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    estado = models.CharField(max_length=10, choices=ESTADOS, default="CREADA")
+
+    def marcar_pagada(self):
+        self.estado = "PAGADA"
+        self.save()
+
+
+class OrdenItem(models.Model):
+    orden = models.ForeignKey(Orden, on_delete=models.CASCADE, related_name="items")
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE)
+    cantidad = models.PositiveIntegerField()
+    precio_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def subtotal(self):
+        return self.cantidad * self.precio_unitario
+    def __str__(self):
+        return f"{self.cantidad} x {self.producto.nombre} @ {self.precio_unitario}"
