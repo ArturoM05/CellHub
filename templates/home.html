@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CellHub — Tu próximo smartphone</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --surface: #111118; --card: #16161f; --border: #222230;
+      --accent: #6c63ff; --accent3: #00d4aa; --text: #f0f0f5; --muted: #7070a0;
+      --fd: 'Syne', sans-serif; --fb: 'DM Sans', sans-serif;
+    }
+    body { background:var(--bg); color:var(--text); font-family:var(--fb); min-height:100vh; overflow-x:hidden; }
+
+    /* NAV */
+    nav { position:sticky; top:0; z-index:200; display:flex; align-items:center; justify-content:space-between; padding:1rem 2rem; background:rgba(10,10,15,0.9); backdrop-filter:blur(20px); border-bottom:1px solid var(--border); }
+    .nav-logo { font-family:var(--fd); font-weight:800; font-size:1.4rem; background:linear-gradient(135deg,var(--accent),var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .nav-right { display:flex; gap:.75rem; align-items:center; }
+    #cartBtn { background:var(--card); border:1px solid var(--border); color:var(--text); padding:.5rem 1rem; border-radius:8px; cursor:pointer; font-family:var(--fb); font-size:.875rem; display:flex; align-items:center; gap:.4rem; transition:border-color .2s; }
+    #cartBtn:hover { border-color:var(--accent); }
+    .cart-count { background:var(--accent); color:#fff; border-radius:50%; width:18px; height:18px; font-size:.7rem; display:inline-flex; align-items:center; justify-content:center; font-weight:700; }
+    #userDisplay { font-size:.85rem; color:var(--muted); }
+    .btn { padding:.55rem 1.1rem; border-radius:8px; font-family:var(--fb); font-size:.875rem; font-weight:500; cursor:pointer; border:none; transition:all .2s; }
+    .btn-primary { background:var(--accent); color:#fff; box-shadow:0 0 20px rgba(108,99,255,.3); }
+    .btn-primary:hover { opacity:.85; transform:translateY(-1px); }
+    .btn-ghost { background:transparent; color:var(--text); border:1px solid var(--border); }
+    .btn-ghost:hover { border-color:var(--accent); background:rgba(108,99,255,.08); }
+
+    /* HERO */
+    .hero { padding:5rem 2rem 3rem; text-align:center; position:relative; overflow:hidden; }
+    .hero::before { content:''; position:absolute; top:-100px; left:50%; transform:translateX(-50%); width:600px; height:400px; background:radial-gradient(ellipse,rgba(108,99,255,.15) 0%,transparent 70%); pointer-events:none; }
+    .hero h1 { font-family:var(--fd); font-size:clamp(2.5rem,7vw,5rem); font-weight:800; line-height:.95; letter-spacing:-.04em; }
+    .hero h1 span { background:linear-gradient(135deg,var(--accent),var(--accent3)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .hero p { margin-top:1rem; color:var(--muted); font-size:1rem; max-width:420px; margin-left:auto; margin-right:auto; }
+
+    /* FILTERS */
+    .controls { max-width:1100px; margin:2rem auto 1rem; padding:0 2rem; display:flex; gap:.75rem; flex-wrap:wrap; align-items:center; }
+    .search-wrap { flex:1; min-width:200px; position:relative; }
+    .search-wrap input { width:100%; background:var(--card); border:1px solid var(--border); color:var(--text); padding:.65rem 1rem .65rem 2.5rem; border-radius:9px; font-family:var(--fb); font-size:.9rem; outline:none; transition:border-color .2s; }
+    .search-wrap input:focus { border-color:var(--accent); }
+    .search-wrap input::placeholder { color:var(--muted); }
+    .search-icon { position:absolute; left:.8rem; top:50%; transform:translateY(-50%); color:var(--muted); font-size:.9rem; pointer-events:none; }
+    .filter-btn { background:var(--card); border:1px solid var(--border); color:var(--muted); padding:.5rem .9rem; border-radius:7px; font-family:var(--fb); font-size:.8rem; cursor:pointer; transition:all .2s; white-space:nowrap; }
+    .filter-btn.active, .filter-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(108,99,255,.1); }
+
+    /* GRID */
+    .catalog { max-width:1100px; margin:0 auto; padding:0 2rem 4rem; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.1rem; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; cursor:pointer; transition:transform .25s,border-color .25s,box-shadow .25s; animation:fadeUp .4s ease both; }
+    .card:hover { transform:translateY(-4px); border-color:rgba(108,99,255,.4); box-shadow:0 16px 50px rgba(0,0,0,.4); }
+    .card-img { height:160px; background:linear-gradient(135deg,#1a1a2e,#16213e); display:flex; align-items:center; justify-content:center; font-size:4rem; position:relative; }
+    .os-badge { position:absolute; top:10px; left:10px; font-size:.65rem; font-weight:700; padding:2px 7px; border-radius:100px; }
+    .os-android { background:#3ddc84; color:#000; }
+    .os-ios { background:#fff; color:#000; }
+    .card-body { padding:1rem; }
+    .card-brand { font-size:.7rem; font-weight:600; color:var(--accent); text-transform:uppercase; letter-spacing:.08em; margin-bottom:.25rem; }
+    .card-name { font-family:var(--fd); font-size:1.05rem; font-weight:700; letter-spacing:-.02em; margin-bottom:.6rem; }
+    .chips { display:flex; gap:.35rem; flex-wrap:wrap; margin-bottom:.8rem; }
+    .chip { background:rgba(255,255,255,.05); border:1px solid var(--border); color:var(--muted); padding:.15rem .5rem; border-radius:5px; font-size:.7rem; }
+    .card-footer { display:flex; align-items:center; justify-content:space-between; padding-top:.8rem; border-top:1px solid var(--border); }
+    .card-price { font-family:var(--fd); font-size:1.2rem; font-weight:800; letter-spacing:-.03em; }
+    .card-price small { font-size:.65rem; color:var(--muted); font-weight:400; font-family:var(--fb); display:block; }
+    .add-btn { background:var(--accent); border:none; color:#fff; width:36px; height:36px; border-radius:9px; font-size:1.2rem; cursor:pointer; transition:transform .2s,background .2s; display:flex; align-items:center; justify-content:center; }
+    .add-btn:hover { transform:scale(1.1); }
+    .add-btn.added { background:var(--accent3); }
+
+    /* CART SIDEBAR */
+    .cart-overlay { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:400; opacity:0; pointer-events:none; transition:opacity .3s; }
+    .cart-overlay.open { opacity:1; pointer-events:all; }
+    .cart-panel { position:fixed; right:0; top:0; bottom:0; width:420px; max-width:100vw; background:var(--surface); border-left:1px solid var(--border); z-index:401; display:flex; flex-direction:column; transform:translateX(100%); transition:transform .35s cubic-bezier(.4,0,.2,1); }
+    .cart-overlay.open .cart-panel { transform:translateX(0); }
+    .cart-header { display:flex; align-items:center; justify-content:space-between; padding:1.25rem 1.5rem; border-bottom:1px solid var(--border); }
+    .cart-title { font-family:var(--fd); font-weight:700; font-size:1.1rem; }
+    .close-btn { background:var(--card); border:1px solid var(--border); color:var(--text); width:32px; height:32px; border-radius:7px; cursor:pointer; font-size:1rem; display:flex; align-items:center; justify-content:center; }
+    .close-btn:hover { background:var(--border); }
+    .cart-items { flex:1; overflow-y:auto; padding:1rem 1.5rem; }
+    .cart-empty { text-align:center; padding:3rem 1rem; color:var(--muted); }
+    .cart-empty-icon { font-size:2.5rem; margin-bottom:.75rem; }
+    .ci { display:flex; gap:.75rem; align-items:center; padding:.75rem 0; border-bottom:1px solid var(--border); }
+    .ci-emoji { font-size:1.8rem; width:44px; text-align:center; }
+    .ci-info { flex:1; }
+    .ci-name { font-size:.875rem; font-weight:500; margin-bottom:.2rem; }
+    .ci-price { font-size:.8rem; color:var(--muted); }
+    .ci-remove { background:none; border:none; color:var(--muted); cursor:pointer; font-size:1rem; padding:.25rem; border-radius:5px; transition:color .2s; }
+    .ci-remove:hover { color:#ff6b6b; }
+    .cart-footer { padding:1.25rem 1.5rem; border-top:1px solid var(--border); }
+    .cart-total { display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; }
+    .cart-total-label { color:var(--muted); font-size:.9rem; }
+    .cart-total-value { font-family:var(--fd); font-size:1.4rem; font-weight:800; }
+    .checkout-btn { width:100%; padding:.9rem; background:var(--accent); color:#fff; border:none; border-radius:10px; font-family:var(--fb); font-size:1rem; font-weight:600; cursor:pointer; transition:opacity .2s,transform .2s; box-shadow:0 0 25px rgba(108,99,255,.35); }
+    .checkout-btn:hover { opacity:.9; transform:translateY(-1px); }
+    .checkout-btn:disabled { opacity:.5; cursor:not-allowed; transform:none; }
+
+    /* LOGIN MODAL */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.8); backdrop-filter:blur(8px); z-index:500; display:flex; align-items:center; justify-content:center; padding:1.5rem; opacity:0; pointer-events:none; transition:opacity .3s; }
+    .modal-overlay.open { opacity:1; pointer-events:all; }
+    .modal { background:var(--surface); border:1px solid var(--border); border-radius:18px; width:100%; max-width:420px; transform:scale(.95) translateY(16px); transition:transform .3s; }
+    .modal-overlay.open .modal { transform:scale(1) translateY(0); }
+    .modal-head { padding:1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; }
+    .modal-head h2 { font-family:var(--fd); font-size:1.1rem; font-weight:700; }
+    .modal-body { padding:1.5rem; }
+    .form-group { margin-bottom:1rem; }
+    .form-group label { display:block; font-size:.8rem; color:var(--muted); margin-bottom:.4rem; font-weight:500; text-transform:uppercase; letter-spacing:.05em; }
+    .form-group input, .form-group select { width:100%; background:var(--card); border:1px solid var(--border); color:var(--text); padding:.7rem .9rem; border-radius:9px; font-family:var(--fb); font-size:.9rem; outline:none; transition:border-color .2s; }
+    .form-group input:focus, .form-group select:focus { border-color:var(--accent); }
+    .form-group select option { background:var(--card); }
+    .form-row { display:grid; grid-template-columns:1fr 1fr; gap:.75rem; }
+    .modal-footer { padding:0 1.5rem 1.5rem; }
+    .full-btn { width:100%; padding:.85rem; background:var(--accent); color:#fff; border:none; border-radius:10px; font-family:var(--fb); font-size:1rem; font-weight:600; cursor:pointer; transition:opacity .2s; }
+    .full-btn:hover { opacity:.85; }
+    .modal-note { font-size:.78rem; color:var(--muted); text-align:center; margin-top:.75rem; }
+    .modal-note a { color:var(--accent); cursor:pointer; text-decoration:none; }
+    .tab-toggle { display:flex; background:var(--card); border-radius:9px; padding:3px; margin-bottom:1.25rem; }
+    .tab-btn { flex:1; padding:.5rem; border:none; background:none; color:var(--muted); font-family:var(--fb); font-size:.875rem; cursor:pointer; border-radius:7px; transition:all .2s; }
+    .tab-btn.active { background:var(--accent); color:#fff; }
+
+    /* CHECKOUT MODAL */
+    #checkoutModal .modal { max-width:480px; }
+    .order-summary { background:var(--card); border-radius:10px; padding:1rem; margin-bottom:1rem; }
+    .order-summary-row { display:flex; justify-content:space-between; font-size:.875rem; padding:.35rem 0; }
+    .order-summary-row.total { border-top:1px solid var(--border); margin-top:.5rem; padding-top:.75rem; font-weight:700; font-size:1rem; }
+
+    /* SUCCESS */
+    .success-screen { text-align:center; padding:2rem 1rem; }
+    .success-icon { font-size:3.5rem; margin-bottom:1rem; animation:popIn .4s cubic-bezier(.34,1.56,.64,1); }
+    .success-title { font-family:var(--fd); font-size:1.5rem; font-weight:800; margin-bottom:.5rem; }
+    .success-sub { color:var(--muted); font-size:.9rem; margin-bottom:1.5rem; }
+    .order-badge { display:inline-block; background:rgba(108,99,255,.15); border:1px solid rgba(108,99,255,.3); color:var(--accent); padding:.5rem 1.25rem; border-radius:100px; font-family:var(--fd); font-weight:700; font-size:1.1rem; margin-bottom:1rem; }
+
+    /* TOAST */
+    .toast { position:fixed; bottom:1.5rem; right:1.5rem; background:var(--accent3); color:#000; padding:.7rem 1.2rem; border-radius:10px; font-weight:600; font-size:.875rem; z-index:999; transform:translateY(80px); opacity:0; transition:all .35s cubic-bezier(.34,1.56,.64,1); }
+    .toast.show { transform:translateY(0); opacity:1; }
+    .toast.error { background:#ff6b6b; color:#fff; }
+
+    /* MISC */
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes popIn { from{transform:scale(0)} to{transform:scale(1)} }
+    .empty-grid { text-align:center; padding:4rem; color:var(--muted); grid-column:1/-1; }
+    footer { border-top:1px solid var(--border); padding:1.5rem 2rem; text-align:center; color:var(--muted); font-size:.8rem; }
+    footer a { color:var(--accent); text-decoration:none; }
+
+    @media(max-width:640px) {
+      nav { padding:.875rem 1rem; }
+      .hero { padding:3rem 1rem 2rem; }
+      .controls, .catalog { padding-left:1rem; padding-right:1rem; }
+      .cart-panel { width:100vw; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">CellHub</div>
+  <div class="nav-right">
+    <span id="userDisplay"></span>
+    <button id="cartBtn" onclick="openCart()">🛒 Carrito <span class="cart-count" id="cartCount">0</span></button>
+    <button class="btn btn-ghost" id="authBtn" onclick="openAuthModal()">Iniciar sesión</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <h1>Tu próximo<br><span>smartphone</span></h1>
+  <p>Catálogo con specs reales, precios transparentes y compra en segundos.</p>
+</section>
+
+<!-- FILTERS -->
+<div class="controls">
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="searchInput" placeholder="Buscar marca o modelo..." oninput="applyFilters()">
+  </div>
+  <button class="filter-btn active" onclick="setFilter('all',this)">Todos</button>
+  <button class="filter-btn" onclick="setFilter('android',this)">Android</button>
+  <button class="filter-btn" onclick="setFilter('ios',this)">iOS</button>
+  <button class="filter-btn" onclick="setFilter('cheap',this)">Hasta $2M</button>
+  <button class="filter-btn" onclick="setFilter('premium',this)">Premium</button>
+</div>
+
+<!-- CATALOG -->
+<section class="catalog">
+  <div class="grid" id="grid">
+    <div style="height:300px;background:var(--card);border-radius:14px;animation:fadeUp .4s"></div>
+    <div style="height:300px;background:var(--card);border-radius:14px;animation:fadeUp .4s .1s both"></div>
+    <div style="height:300px;background:var(--card);border-radius:14px;animation:fadeUp .4s .2s both"></div>
+  </div>
+</section>
+
+<!-- CART SIDEBAR -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCartOnBg(event)">
+  <div class="cart-panel">
+    <div class="cart-header">
+      <span class="cart-title">🛒 Mi carrito</span>
+      <button class="close-btn" onclick="closeCart()">✕</button>
+    </div>
+    <div class="cart-items" id="cartItems">
+      <div class="cart-empty"><div class="cart-empty-icon">🛍️</div><p>Tu carrito está vacío</p></div>
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span class="cart-total-label">Total</span>
+        <span class="cart-total-value" id="cartTotal">$0</span>
+      </div>
+      <button class="checkout-btn" id="checkoutBtn" onclick="startCheckout()" disabled>
+        Comprar ahora →
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2 id="authTitle">Acceder a CellHub</h2>
+      <button class="close-btn" onclick="closeModal('authModal')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-toggle">
+        <button class="tab-btn active" id="tabLogin" onclick="switchTab('login')">Iniciar sesión</button>
+        <button class="tab-btn" id="tabRegister" onclick="switchTab('register')">Registrarse</button>
+      </div>
+      <!-- LOGIN -->
+      <div id="loginForm">
+        <div class="form-group"><label>Usuario</label><input id="loginUser" type="text" placeholder="juan123"></div>
+        <div class="form-group"><label>Contraseña</label><input id="loginPass" type="password" placeholder="••••••••"></div>
+      </div>
+      <!-- REGISTER -->
+      <div id="registerForm" style="display:none">
+        <div class="form-row">
+          <div class="form-group"><label>Nombre</label><input id="regFirst" type="text" placeholder="Juan"></div>
+          <div class="form-group"><label>Apellido</label><input id="regLast" type="text" placeholder="Pérez"></div>
+        </div>
+        <div class="form-group"><label>Usuario</label><input id="regUser" type="text" placeholder="juan123"></div>
+        <div class="form-group"><label>Email</label><input id="regEmail" type="email" placeholder="juan@email.com"></div>
+        <div class="form-group"><label>Teléfono</label><input id="regPhone" type="text" placeholder="3001234567"></div>
+        <div class="form-group"><label>Contraseña</label><input id="regPass" type="password" placeholder="••••••••"></div>
+        <div class="form-group"><label>Confirmar contraseña</label><input id="regPass2" type="password" placeholder="••••••••"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="full-btn" id="authSubmitBtn" onclick="submitAuth()">Iniciar sesión</button>
+      <p class="modal-note" id="authNote">¿No tienes cuenta? <a onclick="switchTab('register')">Regístrate gratis</a></p>
+    </div>
+  </div>
+</div>
+
+<!-- CHECKOUT MODAL -->
+<div class="modal-overlay" id="checkoutModal">
+  <div class="modal" id="checkoutModalInner">
+    <div class="modal-head">
+      <h2>📦 Datos de envío</h2>
+      <button class="close-btn" onclick="closeModal('checkoutModal')">✕</button>
+    </div>
+    <div class="modal-body" id="checkoutBody">
+      <!-- Resumen orden -->
+      <div class="order-summary" id="orderSummary"></div>
+      <!-- Formulario -->
+      <div class="form-group"><label>Nombre completo</label><input id="chkName" type="text" placeholder="Juan Pérez"></div>
+      <div class="form-row">
+        <div class="form-group"><label>Ciudad</label><input id="chkCity" type="text" placeholder="Bogotá"></div>
+        <div class="form-group"><label>Teléfono</label><input id="chkPhone" type="text" placeholder="3001234567"></div>
+      </div>
+      <div class="form-group"><label>Dirección</label><input id="chkStreet" type="text" placeholder="Cra 7 # 32-16, Apto 301"></div>
+      <div class="form-group"><label>Método de pago (demo)</label>
+        <select id="chkPayment">
+          <option value="credit_card">💳 Tarjeta de Crédito</option>
+          <option value="debit_card">🏧 Tarjeta Débito</option>
+          <option value="pse">🏦 PSE</option>
+          <option value="nequi">📱 Nequi</option>
+          <option value="davivienda">🔷 Davivienda</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="full-btn" id="placeOrderBtn" onclick="placeOrder()">✅ Confirmar compra</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<footer><p>📱 <strong>CellHub</strong> &nbsp;·&nbsp; <a href="/api/docs/">API Docs</a> &nbsp;·&nbsp; <a href="/admin/">Admin</a></p></footer>
+
+<script>
+const API = '/api/v1';
+let allProducts = [];
+let currentFilter = 'all';
+let cartLocal = [];      // carrito local (items con id del backend)
+let authToken = localStorage.getItem('cellhub_token') || null;
+let currentUser = JSON.parse(localStorage.getItem('cellhub_user') || 'null');
+
+const brandEmoji = { samsung:'🌌', apple:'🍎', xiaomi:'⚡', motorola:'〽️', huawei:'🔷', oppo:'🟢' };
+const getEmoji = b => brandEmoji[b.toLowerCase()] || '📱';
+const fmtPrice = p => '$' + Number(p).toLocaleString('es-CO');
+
+// ── AUTH helpers ─────────────────────────────────────────────────────────────
+function authHeaders() {
+  return authToken ? { 'Content-Type':'application/json', 'Authorization':'Bearer '+authToken } : { 'Content-Type':'application/json' };
+}
+
+function setUser(token, user) {
+  authToken = token;
+  currentUser = user;
+  localStorage.setItem('cellhub_token', token);
+  localStorage.setItem('cellhub_user', JSON.stringify(user));
+  updateNavUser();
+}
+
+function logout() {
+  authToken = null; currentUser = null; cartLocal = [];
+  localStorage.removeItem('cellhub_token');
+  localStorage.removeItem('cellhub_user');
+  updateNavUser();
+  renderCart();
+}
+
+function updateNavUser() {
+  const d = document.getElementById('userDisplay');
+  const b = document.getElementById('authBtn');
+  if (currentUser) {
+    d.textContent = '👤 ' + currentUser.username;
+    b.textContent = 'Salir';
+    b.onclick = logout;
+  } else {
+    d.textContent = '';
+    b.textContent = 'Iniciar sesión';
+    b.onclick = openAuthModal;
+  }
+}
+
+// ── LOAD PRODUCTS ────────────────────────────────────────────────────────────
+async function loadProducts() {
+  try {
+    const r = await fetch(`${API}/products/`);
+    const d = await r.json();
+    allProducts = d.results || d;
+    renderGrid(allProducts);
+    if (currentUser) await syncCart();
+  } catch(e) {
+    document.getElementById('grid').innerHTML = `<div class="empty-grid">⚠️ No se pudo conectar con la API.<br><small>Corre python seed_data.py primero</small></div>`;
+  }
+}
+
+function renderGrid(products) {
+  if (!products.length) {
+    document.getElementById('grid').innerHTML = '<div class="empty-grid">🔍 Sin resultados</div>';
+    return;
+  }
+  document.getElementById('grid').innerHTML = products.map((p,i) => `
+    <div class="card" style="animation-delay:${i*.06}s">
+      <div class="card-img">
+        <span class="os-badge ${p.os==='ios'?'os-ios':'os-android'}">${p.os==='ios'?'iOS':'Android'}</span>
+        <span style="filter:drop-shadow(0 0 12px rgba(255,255,255,.1))">${getEmoji(p.brand)}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-brand">${p.brand}</div>
+        <div class="card-name">${p.model_name}</div>
+        <div class="chips">
+          <span class="chip">${p.ram_gb}GB RAM</span>
+          <span class="chip">${p.storage_gb}GB</span>
+          <span class="chip">${p.camera_mp}MP</span>
+          <span class="chip">${p.battery_mah}mAh</span>
+        </div>
+        <div class="card-footer">
+          <div class="card-price">${fmtPrice(p.price)}<small>IVA incluido</small></div>
+          <button class="add-btn" id="addbtn-${p.id}" onclick="addToCart(${p.id},'${p.brand} ${p.model_name}',${p.price})">+</button>
+        </div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+}
+function applyFilters() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let f = allProducts.filter(p =>
+    (!q || p.brand.toLowerCase().includes(q) || p.model_name.toLowerCase().includes(q))
+  );
+  if (currentFilter === 'android') f = f.filter(p => p.os==='android');
+  else if (currentFilter === 'ios') f = f.filter(p => p.os==='ios');
+  else if (currentFilter === 'cheap') f = f.filter(p => p.price <= 2000000);
+  else if (currentFilter === 'premium') f = f.filter(p => p.price > 3000000);
+  renderGrid(f);
+}
+
+// ── CART ─────────────────────────────────────────────────────────────────────
+async function addToCart(productId, name, price) {
+  if (!authToken) {
+    toast('Inicia sesión para agregar al carrito', false);
+    openAuthModal();
+    return;
+  }
+  const btn = document.getElementById('addbtn-'+productId);
+  btn.textContent = '⏳'; btn.disabled = true;
+
+  try {
+    const r = await fetch(`${API}/cart/add/`, {
+      method:'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ product_id: productId, quantity: 1 })
+    });
+    const d = await r.json();
+    if (!r.ok) { toast(d.error || 'Error al agregar', false); }
+    else {
+      cartLocal = d.cart.items;
+      renderCart();
+      toast('✓ ' + name + ' agregado');
+      btn.textContent = '✓'; btn.style.background='var(--accent3)';
+      setTimeout(() => { btn.textContent='+'; btn.style.background=''; btn.disabled=false; }, 1500);
+      return;
+    }
+  } catch(e) { toast('Error de conexión', false); }
+  btn.textContent = '+'; btn.disabled = false;
+}
+
+async function syncCart() {
+  if (!authToken) return;
+  try {
+    const r = await fetch(`${API}/cart/summary/`, { headers: authHeaders() });
+    if (r.ok) { const d = await r.json(); cartLocal = d.items; renderCart(); }
+  } catch(e) {}
+}
+
+async function removeItem(itemId) {
+  try {
+    const r = await fetch(`${API}/cart/remove/${itemId}/`, { method:'DELETE', headers: authHeaders() });
+    if (r.ok) { const d = await r.json(); cartLocal = cartLocal.filter(i => i.id !== itemId); renderCart(); }
+  } catch(e) {}
+}
+
+function renderCart() {
+  const total = cartLocal.reduce((s,i) => s + i.subtotal, 0);
+  const count = cartLocal.reduce((s,i) => s + i.quantity, 0);
+  document.getElementById('cartCount').textContent = count;
+  document.getElementById('cartTotal').textContent = fmtPrice(total);
+  document.getElementById('checkoutBtn').disabled = cartLocal.length === 0;
+
+  const container = document.getElementById('cartItems');
+  if (!cartLocal.length) {
+    container.innerHTML = '<div class="cart-empty"><div class="cart-empty-icon">🛍️</div><p>Tu carrito está vacío</p></div>';
+    return;
+  }
+  container.innerHTML = cartLocal.map(i => `
+    <div class="ci">
+      <div class="ci-emoji">${getEmoji(i.name.split(' ')[0])}</div>
+      <div class="ci-info">
+        <div class="ci-name">${i.name}</div>
+        <div class="ci-price">${i.quantity}x ${fmtPrice(i.price)} = <strong>${fmtPrice(i.subtotal)}</strong></div>
+      </div>
+      <button class="ci-remove" onclick="removeItem(${i.id})" title="Eliminar">🗑</button>
+    </div>
+  `).join('');
+}
+
+function openCart() { document.getElementById('cartOverlay').classList.add('open'); }
+function closeCart() { document.getElementById('cartOverlay').classList.remove('open'); }
+function closeCartOnBg(e) { if (e.target === document.getElementById('cartOverlay')) closeCart(); }
+
+// ── AUTH MODAL ────────────────────────────────────────────────────────────────
+function openAuthModal() { document.getElementById('authModal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('loginForm').style.display   = isLogin ? '' : 'none';
+  document.getElementById('registerForm').style.display = isLogin ? 'none' : '';
+  document.getElementById('tabLogin').classList.toggle('active', isLogin);
+  document.getElementById('tabRegister').classList.toggle('active', !isLogin);
+  document.getElementById('authSubmitBtn').textContent = isLogin ? 'Iniciar sesión' : 'Crear cuenta';
+  document.getElementById('authTitle').textContent     = isLogin ? 'Acceder a CellHub' : 'Crear cuenta';
+  document.getElementById('authNote').innerHTML        = isLogin
+    ? '¿No tienes cuenta? <a onclick="switchTab(\'register\')">Regístrate gratis</a>'
+    : '¿Ya tienes cuenta? <a onclick="switchTab(\'login\')">Inicia sesión</a>';
+}
+
+async function submitAuth() {
+  const isLogin = document.getElementById('loginForm').style.display !== 'none';
+  const btn = document.getElementById('authSubmitBtn');
+  btn.textContent = '⏳ Cargando...'; btn.disabled = true;
+
+  try {
+    if (isLogin) {
+      const r = await fetch(`${API}/users/guest-login/`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ username: document.getElementById('loginUser').value, password: document.getElementById('loginPass').value })
+      });
+      const d = await r.json();
+      if (!r.ok) { toast(d.error || 'Credenciales incorrectas', false); }
+      else { setUser(d.access, d.user); closeModal('authModal'); toast('¡Bienvenido, '+d.user.username+'! 👋'); await syncCart(); }
+    } else {
+      const r = await fetch(`${API}/users/register/`, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          username:document.getElementById('regUser').value,
+          email:document.getElementById('regEmail').value,
+          first_name:document.getElementById('regFirst').value,
+          last_name:document.getElementById('regLast').value,
+          phone:document.getElementById('regPhone').value,
+          password:document.getElementById('regPass').value,
+          password2:document.getElementById('regPass2').value,
+        })
+      });
+      const d = await r.json();
+      if (!r.ok) {
+        const errs = Object.values(d).flat().join(' ');
+        toast(errs, false);
+      } else {
+        // Auto-login after register
+        const lr = await fetch(`${API}/users/guest-login/`, {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ username: document.getElementById('regUser').value, password: document.getElementById('regPass').value })
+        });
+        const ld = await lr.json();
+        if (lr.ok) { setUser(ld.access, ld.user); closeModal('authModal'); toast('¡Cuenta creada! Bienvenido 🎉'); }
+      }
+    }
+  } catch(e) { toast('Error de conexión', false); }
+  btn.textContent = isLogin ? 'Iniciar sesión' : 'Crear cuenta';
+  btn.disabled = false;
+}
+
+// ── CHECKOUT ──────────────────────────────────────────────────────────────────
+function startCheckout() {
+  if (!authToken) { openAuthModal(); return; }
+  if (!cartLocal.length) { toast('Tu carrito está vacío', false); return; }
+
+  // Rellenar resumen
+  const rows = cartLocal.map(i => `<div class="order-summary-row"><span>${i.name} x${i.quantity}</span><span>${fmtPrice(i.subtotal)}</span></div>`).join('');
+  const total = cartLocal.reduce((s,i) => s+i.subtotal, 0);
+  document.getElementById('orderSummary').innerHTML = rows +
+    `<div class="order-summary-row total"><span>Total</span><span>${fmtPrice(total)}</span></div>`;
+
+  // Pre-rellenar nombre si hay usuario
+  if (currentUser) document.getElementById('chkName').value = currentUser.username;
+
+  closeCart();
+  document.getElementById('checkoutModal').classList.add('open');
+}
+
+async function placeOrder() {
+  const btn = document.getElementById('placeOrderBtn');
+  const name    = document.getElementById('chkName').value.trim();
+  const city    = document.getElementById('chkCity').value.trim();
+  const phone   = document.getElementById('chkPhone').value.trim();
+  const street  = document.getElementById('chkStreet').value.trim();
+  const payment = document.getElementById('chkPayment').value;
+
+  if (!name || !city || !phone || !street) { toast('Completa todos los campos', false); return; }
+
+  btn.textContent = '⏳ Procesando...'; btn.disabled = true;
+
+  try {
+    const r = await fetch(`${API}/orders/quick-checkout/`, {
+      method: 'POST',
+      headers: authHeaders(),
+      body: JSON.stringify({ full_name:name, city, phone, street, payment_method:payment })
+    });
+    const d = await r.json();
+
+    if (!r.ok) {
+      toast(d.error || 'Error al procesar la orden', false);
+    } else {
+      // Mostrar pantalla de éxito
+      document.getElementById('checkoutBody').innerHTML = `
+        <div class="success-screen">
+          <div class="success-icon">🎉</div>
+          <div class="success-title">¡Orden creada!</div>
+          <div class="success-sub">Tu pedido fue registrado exitosamente</div>
+          <div class="order-badge">Orden #${d.order_id}</div>
+          <p style="color:var(--muted);font-size:.85rem;margin-bottom:1.5rem">Total: <strong style="color:var(--text)">${fmtPrice(d.total)}</strong></p>
+          <p style="color:var(--muted);font-size:.8rem">Puedes ver el detalle completo en el <a href="/admin/orders/order/" style="color:var(--accent)">panel de administración →</a></p>
+        </div>`;
+      document.getElementById('checkoutModalInner').querySelector('.modal-head h2').textContent = '✅ Compra confirmada';
+      document.getElementById('placeOrderBtn').style.display = 'none';
+      cartLocal = [];
+      renderCart();
+    }
+  } catch(e) { toast('Error de conexión', false); }
+
+  btn.textContent = '✅ Confirmar compra'; btn.disabled = false;
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+function toast(msg, ok=true) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (ok ? '' : ' error');
+  setTimeout(() => t.className='toast', 2800);
+}
+
+// Cerrar modales con Escape
+document.addEventListener('keydown', e => {
+  if (e.key==='Escape') { closeCart(); closeModal('authModal'); closeModal('checkoutModal'); }
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+updateNavUser();
+loadProducts();
+if (currentUser) syncCart();
+</script>
+</body>
+</html>
