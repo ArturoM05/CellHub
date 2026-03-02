@@ -72,6 +72,9 @@ class OrderBuilder:
         """
         Construye y persiste la orden en la base de datos.
         Retorna la instancia de Order creada.
+        
+        IMPORTANTE: Automáticamente reserva stock del inventario.
+        Si falla la reserva, la orden NO se crea.
         """
         # Import aquí para evitar importaciones circulares
         from apps.orders.models import Order, OrderItem
@@ -83,6 +86,19 @@ class OrderBuilder:
             for item in self._items
         )
 
+        # Primero: Intentar reservar stock para todos los items
+        # Si falla cualquiera, levantamos error ANTES de crear la orden
+        for item_data in self._items:
+            product = item_data['product']
+            quantity = item_data['quantity']
+            try:
+                product.inventory.reserve_stock(quantity)
+            except ValueError as e:
+                raise ValueError(f"No hay stock para {product.brand} {product.model_name}: {str(e)}")
+            except Exception as e:
+                raise ValueError(f"Error al reservar stock de {product.brand}: {str(e)}")
+
+        # Segundo: Crear la orden
         order = Order.objects.create(
             user=self._user,
             shipping_address=self._shipping_address,
@@ -92,6 +108,7 @@ class OrderBuilder:
             status='pending',
         )
 
+        # Tercero: Crear los items de la orden
         for item_data in self._items:
             OrderItem.objects.create(order=order, **item_data)
 

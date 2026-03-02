@@ -91,7 +91,7 @@ class QuickCheckoutView(APIView):
             )
         except ValueError as e:
             address.delete()  # limpiar dirección si falla
-            return Response({'error': str(e)}, status=400)
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         # Vaciar carrito
         cart.clear()
