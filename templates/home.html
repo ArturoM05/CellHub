@@ -468,7 +468,13 @@ function closeCartOnBg(e) { if (e.target === document.getElementById('cartOverla
 
 // ── AUTH MODAL ────────────────────────────────────────────────────────────────
 function openAuthModal() { document.getElementById('authModal').classList.add('open'); }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  // Resetear checkout modal al cerrarlo
+  if (id === 'checkoutModal') {
+    resetCheckoutForm();
+  }
+}
 
 function switchTab(tab) {
   const isLogin = tab === 'login';
@@ -530,9 +536,40 @@ async function submitAuth() {
 }
 
 // ── CHECKOUT ──────────────────────────────────────────────────────────────────
+function resetCheckoutForm() {
+  // Restaurar el formulario original
+  document.getElementById('checkoutBody').innerHTML = `
+    <div class="order-summary" id="orderSummary"></div>
+    <div class="form-group"><label>Nombre completo</label><input id="chkName" type="text" placeholder="Juan Pérez"></div>
+    <div class="form-row">
+      <div class="form-group"><label>Ciudad</label><input id="chkCity" type="text" placeholder="Bogotá"></div>
+      <div class="form-group"><label>Teléfono</label><input id="chkPhone" type="text" placeholder="3001234567"></div>
+    </div>
+    <div class="form-group"><label>Dirección</label><input id="chkStreet" type="text" placeholder="Cra 7 # 32-16, Apto 301"></div>
+    <div class="form-group"><label>Método de pago (demo)</label>
+      <select id="chkPayment">
+        <option value="credit_card">💳 Tarjeta de Crédito</option>
+        <option value="debit_card">🏧 Tarjeta Débito</option>
+        <option value="pse">🏦 PSE</option>
+        <option value="nequi">📱 Nequi</option>
+        <option value="davivienda">🔷 Davivienda</option>
+      </select>
+    </div>
+  `;
+  
+  // Restaurar el encabezado y botón
+  document.getElementById('checkoutModalInner').querySelector('.modal-head h2').textContent = '📦 Datos de envío';
+  document.getElementById('placeOrderBtn').style.display = '';
+  document.getElementById('placeOrderBtn').textContent = '✅ Confirmar compra';
+  document.getElementById('placeOrderBtn').disabled = false;
+}
+
 function startCheckout() {
   if (!authToken) { openAuthModal(); return; }
   if (!cartLocal.length) { toast('Tu carrito está vacío', false); return; }
+
+  // Resetear el modal antes de abrirlo
+  resetCheckoutForm();
 
   // Rellenar resumen
   const rows = cartLocal.map(i => `<div class="order-summary-row"><span>${i.name} x${i.quantity}</span><span>${fmtPrice(i.subtotal)}</span></div>`).join('');
@@ -584,6 +621,9 @@ async function placeOrder() {
       document.getElementById('placeOrderBtn').style.display = 'none';
       cartLocal = [];
       renderCart();
+      
+      // Auto-cerrar modal después de 2.5 segundos
+      setTimeout(() => closeModal('checkoutModal'), 2500);
     }
   } catch(e) { toast('Error de conexión', false); }
 
