@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+
+  # ── Base de datos ──────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB:       cellhub_db
+      POSTGRES_USER:     cellhub_user
+      POSTGRES_PASSWORD: cellhub_pass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cellhub_user -d cellhub_db"]
+      interval: 10s
+      retries: 5
+
+  # ── Monolito Django (Legacy) ───────────────────────────────────────────────
+  django_web:
+    build: .
+    command: >
+      sh -c "python manage.py migrate &&
+             python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    environment:
+      DATABASE_URL: postgres://cellhub_user:cellhub_pass@db:5432/cellhub_db
+      DEBUG: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+
+  # ── Microservicio Flask (Estrangulado) ─────────────────────────────────────
+  flask_payment_service:
+    build: ./flask_payment_service
+    expose:
+      - "5000"
+    environment:
+      FLASK_ENV: production
+    # No depende de la DB: la lógica de pagos es stateless en este microservicio
+
+  # ── Nginx (Orquestador de tráfico) ─────────────────────────────────────────
+  nginx:
+    image: nginx:1.27-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - django_web
+      - flask_payment_service
+
+volumes:
+  postgres_data:
