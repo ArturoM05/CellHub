@@ -111,6 +111,8 @@ SPECTACULAR_SETTINGS = {
 # CORS
 CORS_ALLOW_ALL_ORIGINS = True
 
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
 # Archivos estáticos y media
 STATIC_URL = '/static/'
 MEDIA_URL = '/media/'
