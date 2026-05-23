@@ -64,3 +64,58 @@ class ChangeOrderStatusView(APIView):
             return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(OrderSerializer(order).data)
+
+
+class SubmitOrderToAllyView(APIView):
+    """
+    POST /api/v1/orders/submit-to-ally/
+    Envía orden a servicio aliado para fulfillment (usando Adapter pattern).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        from core.adapters.third_party import RequestsThirdPartyAdapter, MockThirdPartyAdapter
+        from django.conf import settings
+        
+        order_id = request.data.get('order_id')
+        if not order_id:
+            return Response({'error': 'order_id required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            order = Order.objects.get(pk=order_id, user=request.user)
+            
+            # Preparar datos para envío
+            order_data = {
+                'items': [
+                    {'external_id': item.product.id, 'quantity': item.quantity}
+                    for item in order.items.all()
+                ],
+                'shipping_address': {
+                    'street': getattr(order, 'shipping_address', ''),
+                    'city': 'Bogotá',
+                },
+                'customer_email': request.user.email,
+            }
+            
+            # Usar adapter
+            use_mock = getattr(settings, 'USE_MOCK_ADAPTER', True)
+            adapter = MockThirdPartyAdapter() if use_mock else RequestsThirdPartyAdapter(
+                base_url=getattr(settings, 'ALLY_SERVICE_URL', 'https://api.ally.local'),
+                api_key=getattr(settings, 'ALLY_API_KEY', None)
+            )
+            
+            result = adapter.submit_order(order_data)
+            
+            # Enqueue audit task
+            from apps.orders.tasks import audit_order_event
+            audit_order_event.delay(order.id, 'submitted_to_ally', f"External order: {result.get('external_order_id')}")
+            
+            return Response({
+                'status': 'success',
+                'external_order_id': result.get('external_order_id'),
+                'eta': result.get('eta'),
+            }, status=status.HTTP_200_OK)
+        except Order.DoesNotExist:
+            return Response({'error': 'Order not found'}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

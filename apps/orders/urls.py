@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import OrderListCreateView, CreateOrderView, OrderDetailView, ChangeOrderStatusView
+from .views import OrderListCreateView, CreateOrderView, OrderDetailView, ChangeOrderStatusView, SubmitOrderToAllyView
 from .quick_checkout import QuickCheckoutView
 
 urlpatterns = [
@@ -8,4 +8,5 @@ urlpatterns = [
     path('<int:pk>/',         OrderDetailView.as_view(),      name='order-detail'),
     path('<int:pk>/status/',  ChangeOrderStatusView.as_view(),name='order-status'),
     path('quick-checkout/',   QuickCheckoutView.as_view(),    name='quick-checkout'),
+    path('submit-to-ally/',   SubmitOrderToAllyView.as_view(),name='submit-to-ally'),
 ]

@@ -71,3 +71,53 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 
         comparison = self.service.compare_products(product_ids)
         return Response(comparison)
+
+    @extend_schema(parameters=[
+        OpenApiParameter('query', str, description='Búsqueda en servicio externo')
+    ])
+    @action(detail=False, methods=['get'], url_path='external')
+    def external_products(self, request):
+        """
+        GET /api/v1/products/external/?query=...
+        Obtiene productos del servicio aliado usando el Adapter pattern.
+        """
+        from core.adapters.third_party import RequestsThirdPartyAdapter, MockThirdPartyAdapter
+        from django.conf import settings
+        
+        query = request.query_params.get('query', '')
+        
+        try:
+            # Usar adapter real o mock según configuración
+            use_mock = getattr(settings, 'USE_MOCK_ADAPTER', True)
+            adapter = MockThirdPartyAdapter() if use_mock else RequestsThirdPartyAdapter(
+                base_url=getattr(settings, 'ALLY_SERVICE_URL', 'https://api.ally.local'),
+                api_key=getattr(settings, 'ALLY_API_KEY', None)
+            )
+            products = adapter.get_products(query)
+            return Response({'products': products})
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    @extend_schema()
+    @action(detail=False, methods=['get'], url_path='external-pricing/(?P<product_id>[^/.]+)')
+    def external_pricing(self, request, product_id=None):
+        """
+        GET /api/v1/products/external-pricing/{product_id}/
+        Obtiene precio y disponibilidad del producto en servicio aliado.
+        """
+        from core.adapters.third_party import RequestsThirdPartyAdapter, MockThirdPartyAdapter
+        from django.conf import settings
+        
+        try:
+            use_mock = getattr(settings, 'USE_MOCK_ADAPTER', True)
+            adapter = MockThirdPartyAdapter() if use_mock else RequestsThirdPartyAdapter(
+                base_url=getattr(settings, 'ALLY_SERVICE_URL', 'https://api.ally.local'),
+                api_key=getattr(settings, 'ALLY_API_KEY', None)
+            )
+            pricing = adapter.get_pricing(product_id)
+            return Response(pricing) if pricing else Response(
+                {'error': 'Product not found'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
