@@ -1,4 +1,8 @@
-/venv
+# .gitignore
+.venv/
+__pycache__/
 *.pyc
-node_modules/
-frontend/node_modules/
+db.sqlite3
+media/
+.env
+.env.* 

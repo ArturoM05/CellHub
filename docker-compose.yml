@@ -27,6 +27,7 @@ services:
     environment:
       DATABASE_URL: postgres://cellhub_user:cellhub_pass@db:5432/cellhub_db
       DEBUG: "1"
+      CELERY_BROKER_URL: redis://redis:6379/0
     depends_on:
       db:
         condition: service_healthy
@@ -52,6 +53,28 @@ services:
     depends_on:
       - django_web
       - flask_payment_service
+
+  # ── Redis (broker para Celery) ─────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # ── Celery worker ─────────────────────────────────────────────────────────
+  celery_worker:
+    build: .
+    command: celery -A config.celery_app worker -l info
+    volumes:
+      - .:/app
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - DATABASE_URL=postgres://cellhub_user:cellhub_pass@db:5432/cellhub_db
+    depends_on:
+      - redis
+      - db
+      - django_web
 
 volumes:
   postgres_data:

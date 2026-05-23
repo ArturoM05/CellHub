@@ -1,6 +1,7 @@
 """
 CellHub - Configuración Django
 """
+import os
 from pathlib import Path
 from datetime import timedelta
 
@@ -11,6 +12,14 @@ SECRET_KEY = 'django-insecure-cellhub-change-this-in-production-123456'
 DEBUG = True
 
 ALLOWED_HOSTS = ['*']
+
+# Celery / Broker
+# Puede sobrescribirse vía variable de entorno `CELERY_BROKER_URL`
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://localhost:6379/0')
+
+# Opciones por defecto de Celery (puedes ajustar según necesidad)
+CELERY_TASK_ALWAYS_EAGER = False
+CELERY_BEAT_SCHEDULE = {}
 
 INSTALLED_APPS = [
     'django.contrib.admin',

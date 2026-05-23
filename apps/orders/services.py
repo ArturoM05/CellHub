@@ -83,10 +83,21 @@ class OrderService:
             order.change_status('confirmed')
 
             # Notificar al usuario
-            self.notifier.notify_order_confirmed(
-                user_email=order.user.email,
-                user_phone=getattr(order.user, 'phone', ''),
-                order_id=order.id,
-            )
+            # En producción, notificar en background vía Celery
+            try:
+                from .tasks import notify_order_confirmed
+
+                notify_order_confirmed.delay(
+                    user_email=order.user.email,
+                    user_phone=getattr(order.user, 'phone', ''),
+                    order_id=order.id,
+                )
+            except Exception:
+                # Fallback síncrono si Celery no está disponible
+                self.notifier.notify_order_confirmed(
+                    user_email=order.user.email,
+                    user_phone=getattr(order.user, 'phone', ''),
+                    order_id=order.id,
+                )
 
         return {'order_id': order.id, 'payment_result': result}
