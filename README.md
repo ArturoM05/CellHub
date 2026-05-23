@@ -28,9 +28,24 @@ python manage.py migrate
 # 4. Cargar datos de prueba
 python seed_data.py
 
-# 5. Correr servidor
+# 5. Compilar frontend (React + Shopify Polaris)
+cd frontend && npm install && npm run build && cd ..
+
+# 6. Correr servidor
 python manage.py runserver
 ```
+
+### Desarrollo del frontend
+
+```bash
+# Terminal 1 — Django API
+python manage.py runserver
+
+# Terminal 2 — Vite con hot-reload (proxy a /api)
+cd frontend && npm run dev
+```
+
+Abre http://localhost:5173 en desarrollo o http://localhost:8000 en producción.
 
 ---
 

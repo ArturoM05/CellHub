@@ -17,7 +17,7 @@ class Product(models.Model):
     model_name   = models.CharField(max_length=100, verbose_name='Modelo')
     price        = models.DecimalField(max_digits=12, decimal_places=2, verbose_name='Precio')
     description  = models.TextField(verbose_name='Descripción')
-    image        = models.ImageField(upload_to='products/', null=True, blank=True)
+    image        = models.URLField(blank=True, null=True)
     is_active    = models.BooleanField(default=True)
     created_at   = models.DateTimeField(auto_now_add=True)
 
