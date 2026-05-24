@@ -15,3 +15,4 @@ redis>=4.5
 # Frontend (React + Shopify Polaris) — NO van aquí.
 # Dependencias en frontend/package.json — instalar con:
 #   cd frontend && npm install && npm run build
+requests==2.31.0
