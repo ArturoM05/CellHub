@@ -14,6 +14,7 @@ import ProductCatalog from './components/ProductCatalog';
 import AuthModal from './components/AuthModal';
 import CartModal from './components/CartModal';
 import CheckoutModal from './components/CheckoutModal';
+import AllyServiceDashboard from './components/AllyServiceDashboard_proxy';
 import { useToast } from './hooks/useToast';
 import {
   apiFetch,
@@ -207,6 +208,15 @@ export default function App() {
           onAddToCart={handleAddToCart}
           addingId={addingId}
         />
+      </Box>
+
+      <Box paddingBlockStart="600">
+        <Text variant="headingMd" as="h2" fontWeight="medium">
+          Servicio Aliado — UniversalGamePass
+        </Text>
+        <Box paddingBlockStart="300">
+          <AllyServiceDashboard />
+        </Box>
       </Box>
 
       <Box paddingBlockStart="800">
