@@ -6,15 +6,14 @@ from django.conf.urls.static import static
 from django.shortcuts import render
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from core.views import system_info
-
+from core.views_ally import AllyServiceInfoView  # ← agregar esta línea
 
 def welcome(request):
     return render(request, 'home.html')
 
-
-# API routes (language-independent for API consumption)
 api_patterns = [
     path('api/v1/system/info/', system_info, name='system-info'),
+    path('api/v1/ally/info/', AllyServiceInfoView.as_view(), name='ally-info'),  # ← agregar esta línea
     path('api/v1/users/',     include('apps.users.urls')),
     path('api/v1/products/',  include('apps.products.urls')),
     path('api/v1/inventory/', include('apps.inventory.urls')),
@@ -26,7 +25,6 @@ api_patterns = [
     path('api/docs/',   SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]
 
-# i18n patterns (for web routes)
 urlpatterns = i18n_patterns(
     path('', welcome, name='welcome'),
     path('admin/', admin.site.urls),
