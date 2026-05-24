@@ -32,9 +32,10 @@ usermod -aG docker ec2-user
 mkdir -p /opt/cellhub
 cd /opt/cellhub
 
-# Clonar repositorio (HTTPS; requiere token o repo público)
-git clone https://github.com/[YOUR_GITHUB_USER]/cellhub.git . || \
-  git clone https://github.com/user/cellhub.git .
+# Clonar repositorio desde GitHub
+git clone https://github.com/ArturoM05/CellHub.git .
+# Si el repo es privado, usar token o SSH key en su lugar.
+# Para repo privado: git clone https://<TOKEN>@github.com/ArturoM05/CellHub.git .
 
 # Establecer permisos
 chown -R ec2-user:ec2-user /opt/cellhub

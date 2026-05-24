@@ -50,11 +50,10 @@ systemctl start docker
 mkdir -p /opt/cellhub
 cd /opt/cellhub
 
-# Clone repository (using HTTPS; requires personal access token or public repo)
-# For private repo: use git clone https://[TOKEN]@github.com/[USER]/cellhub.git
-# Or set up SSH key in .ssh/config beforehand
-git clone https://github.com/[YOUR_GITHUB_USER]/cellhub.git . || \
-  git clone https://github.com/user/cellhub.git .
+# Clone repository from GitHub (public or accessible repo)
+git clone https://github.com/ArturoM05/CellHub.git .
+# If the repo is private, use a GitHub token or SSH key instead.
+# For private repo: git clone https://<TOKEN>@github.com/ArturoM05/CellHub.git .
 
 # Set permissions
 chown -R ubuntu:ubuntu /opt/cellhub
