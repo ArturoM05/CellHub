@@ -13,14 +13,20 @@ logger = logging.getLogger(__name__)
 
 @api_view(['GET'])
 def system_info(request):
-    """
-    GET /api/v1/system/info/
-    Returns system health status, versions and broker connectivity.
-    """
     info = {
         'service': 'cellhub',
         'version': '1.0.0',
         'environment': settings.DEBUG and 'development' or 'production',
+        'estadisticas_publicas': {
+            'productos_disponibles': 0,
+            'marcas_disponibles': 0,
+            'ordenes_activas': 0,
+        },
+        'endpoints_publicos': {
+            'productos': '/api/v1/products/',
+            'auth': '/api/v1/users/login/',
+            'info': '/api/v1/system/info/',
+        },
         'database': {
             'status': 'connected',
             'backend': settings.DATABASES['default']['ENGINE'],
@@ -35,7 +41,15 @@ def system_info(request):
         },
     }
 
-    # Check Redis broker
+    try:
+        from apps.products.models import Product
+        from apps.orders.models import Order
+        info['estadisticas_publicas']['productos_disponibles'] = Product.objects.count()
+        info['estadisticas_publicas']['marcas_disponibles'] = Product.objects.values('brand').distinct().count()
+        info['estadisticas_publicas']['ordenes_activas'] = Order.objects.count()
+    except Exception:
+        pass
+
     try:
         broker_url = getattr(settings, 'CELERY_BROKER_URL', '')
         if broker_url and 'redis' in broker_url:
@@ -46,7 +60,6 @@ def system_info(request):
         logger.warning(f"Redis broker check failed: {e}")
         info['broker']['status'] = 'error'
 
-    # Check Celery workers (optional: count active tasks/workers)
     try:
         from celery.app.control import Inspect
         from config.celery import celery_app
